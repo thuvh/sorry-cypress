@@ -4,6 +4,7 @@ import { sanitizeS3KeyPrefix } from '../utils/';
 import {
   S3_ACL,
   S3_BUCKET,
+  S3_ENDPOINT,
   S3_FORCE_PATH_STYLE,
   S3_IMAGE_KEY_PREFIX,
   S3_READ_URL_PREFIX,
@@ -11,10 +12,15 @@ import {
   S3_VIDEO_KEY_PREFIX,
 } from './config';
 import { S3SignedUploadResult } from './types';
+aws.config.logger = console;
 
-const BUCKET_URL = S3_FORCE_PATH_STYLE
-  ? `https://s3.amazonaws.com/${S3_BUCKET}`
-  : `https://${S3_BUCKET}.s3.amazonaws.com`;
+const ENDPOINT_URL =
+  S3_ENDPOINT === undefined ? `s3.amazonaws.com` : S3_ENDPOINT;
+
+const BUCKET_URL =
+  S3_FORCE_PATH_STYLE === 'true'
+    ? `https://${ENDPOINT_URL}/${S3_BUCKET}`
+    : `https://${S3_BUCKET}.${ENDPOINT_URL}`;
 
 const ImageContentType = 'image/png';
 const VideoContentType = 'video/mp4';
@@ -22,7 +28,12 @@ const VideoContentType = 'video/mp4';
 const s3 = new aws.S3({
   region: S3_REGION,
   signatureVersion: 'v4',
+  s3ForcePathStyle: S3_FORCE_PATH_STYLE === 'true',
 });
+
+if (S3_ENDPOINT !== undefined) {
+  s3.endpoint = new aws.Endpoint(ENDPOINT_URL);
+}
 
 interface GetUploadURLParams {
   key: string;
